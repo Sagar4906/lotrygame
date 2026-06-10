@@ -1005,21 +1005,43 @@
             try {
                 const res = await fetch(url, options);
                 
-                // If the response is a 404 or is returned as HTML (like GitHub Pages' 404 HTML page),
-                // we must treat this as a SERVER_OFFLINE error to fall back to local offline mode.
                 const contentType = res.headers.get("content-type") || "";
-                if (res.status === 404 || contentType.includes("text/html")) {
+                // If the response is a 404 or 405 (or other client error) or is returned as HTML (like static host fallback),
+                // we must treat this as a SERVER_OFFLINE error to fall back to local offline mode.
+                if (res.status === 404 || res.status === 405 || contentType.includes("text/html")) {
                     throw new Error("SERVER_OFFLINE");
                 }
+
+                // Read body text to verify if it's HTML/invalid JSON
+                const text = await res.text();
+                const trimmed = text.trim();
+                if (trimmed.startsWith("<")) {
+                    throw new Error("SERVER_OFFLINE");
+                }
+
+                // Create a wrapper response that behaves like the real Response
+                const wrapper = {
+                    ok: res.ok,
+                    status: res.status,
+                    headers: res.headers,
+                    text: () => Promise.resolve(text),
+                    json: () => {
+                        try {
+                            return Promise.resolve(JSON.parse(text));
+                        } catch (e) {
+                            return Promise.reject(new Error("SERVER_OFFLINE"));
+                        }
+                    }
+                };
 
                 if (isOfflineMode) {
                     isOfflineMode = false;
                     updateNetworkStatusUI();
                     console.log("Reconnected to Server. Switched to Online Mode.");
                 }
-                return res;
+                return wrapper;
             } catch (err) {
-                if (err.message === "SERVER_OFFLINE" || err instanceof TypeError || err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
+                if (err.message === "SERVER_OFFLINE" || err instanceof TypeError || err.message.includes("Failed to fetch") || err.message.includes("NetworkError") || err instanceof SyntaxError) {
                     if (!isOfflineMode) {
                         isOfflineMode = true;
                         updateNetworkStatusUI();
