@@ -1,0 +1,2147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Guessing Game</title>
+    <!-- PWA Manifest & App Icons -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: rgba(20, 24, 39, 0.65);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-color: #6366f1; /* Indigo */
+            --accent-glow: rgba(99, 102, 241, 0.4);
+            --success-color: #10b981; /* Emerald */
+            --error-color: #ef4444; /* Rose */
+            --warning-color: #f59e0b; /* Amber */
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(236, 72, 153, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        canvas#confetti {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            z-index: 10;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 4px;
+            font-weight: 300;
+        }
+
+        .card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 12px;
+            margin-bottom: 5px;
+        }
+
+        .welcome-msg {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #a5b4fc;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.2s;
+        }
+
+        .icon-btn:hover {
+            color: var(--error-color);
+        }
+
+        /* Sign In & Sign Up Tab and Layout Elements */
+        .auth-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-color);
+            text-align: center;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .role-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 15px;
+        }
+
+        .role-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px 0;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .role-btn.active {
+            background: var(--accent-color);
+            color: var(--text-color);
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .auth-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            color: var(--text-color);
+            padding: 14px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .auth-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        .password-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .password-container input {
+            padding-right: 48px;
+        }
+
+        .eye-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .eye-btn:hover {
+            color: var(--text-color);
+        }
+
+        .input-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .auth-footer {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+
+        .auth-link {
+            color: var(--accent-color);
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .auth-link:hover {
+            color: #a5b4fc;
+        }
+
+        /* Admin dashboard metrics table layout */
+        .admin-dashboard {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .admin-config-box {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .admin-config-box input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text-color);
+            outline: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .admin-config-box input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .admin-table-wrapper {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        table.admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            color: var(--text-color);
+            text-align: left;
+        }
+
+        table.admin-table th, table.admin-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        table.admin-table th {
+            background: rgba(0, 0, 0, 0.3);
+            color: #a5b4fc;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        table.admin-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Difficulty Selector Tabs */
+        .diff-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .diff-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px 0;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .diff-btn.active {
+            background: var(--accent-color);
+            color: var(--text-color);
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        /* Custom dropdown and ID join styles */
+        .custom-select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            color: var(--text-color);
+            padding: 12px;
+            font-weight: 600;
+            outline: none;
+            text-align: center;
+            text-align-last: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            width: 100%;
+            transition: border-color 0.2s;
+        }
+
+        .custom-select:focus {
+            border-color: var(--accent-color);
+        }
+
+        .id-input-field {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            color: var(--text-color);
+            padding: 12px;
+            font-weight: 600;
+            outline: none;
+            flex: 1;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        .id-input-field:focus {
+            border-color: var(--accent-color);
+        }
+
+        .info-panel {
+            text-align: center;
+        }
+
+        .info-panel h2 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #a5b4fc;
+            margin-bottom: 12px;
+        }
+
+        .attempts-bar {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            height: 16px;
+            margin-top: 10px;
+        }
+
+        .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dot.active {
+            background: var(--success-color);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+            border-color: transparent;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .guess-input {
+            width: 130px;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            color: var(--text-color);
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .guess-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .guess-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: var(--text-color);
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #4f46e5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(99, 102, 241, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-color);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .feedback {
+            text-align: center;
+            font-size: 1.05rem;
+            font-weight: 600;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.3s ease;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stats-panel {
+            margin-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 100%;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px 14px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .stat-val {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #a5b4fc;
+        }
+
+        .stat-lbl {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .best-records {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 10px;
+        }
+
+        .best-records span {
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .reset-btn {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 5px;
+            transition: color 0.2s;
+        }
+
+        .reset-btn:hover {
+            color: var(--error-color);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        .shake {
+            animation: shake 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .network-badge {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+        .network-badge.online {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+        .network-badge.offline {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+            border-color: rgba(245, 158, 11, 0.3);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti"></canvas>
+
+    <div class="container">
+        <header>
+            <div style="display: flex; justify-content: center; align-items: center; gap: 10px; position: relative;">
+                <h1>Number Guesser</h1>
+                <div id="network-status-badge" class="network-badge online">🟢 Online</div>
+            </div>
+            <p>Decrypt the system generated random code</p>
+        </header>
+
+        <div class="card" id="main-card">
+            
+            <!-- VIEW 1: SIGN IN VIEW -->
+            <div id="view-signin" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="auth-title">Sign In</div>
+
+                <div class="form-group">
+                    <div class="input-label">Username</div>
+                    <input type="text" id="signin-username" class="auth-input" placeholder="Enter username" autocomplete="off" onkeydown="handleAuthEnter(event, 'signin')">
+                    
+                    <div class="input-label">Password</div>
+                    <div class="password-container">
+                        <input type="password" id="signin-password" class="auth-input" placeholder="Enter password" autocomplete="off" onkeydown="handleAuthEnter(event, 'signin')">
+                        <button class="eye-btn" type="button" onclick="togglePasswordVisibility('signin-password', this)">👁️</button>
+                    </div>
+                    
+                    <button class="btn btn-primary" style="margin-top: 10px;" onclick="submitSignIn()">Sign In</button>
+                </div>
+
+                <div class="auth-footer">
+                    New player? <span class="auth-link" onclick="showAuthScreen('signup')">Sign Up Here</span>
+                </div>
+            </div>
+
+            <!-- VIEW 2: SIGN UP VIEW -->
+            <div id="view-signup" style="display: none; flex-direction: column; gap: 10px;">
+                <div class="auth-title">Create Account</div>
+
+                <div class="form-group">
+                    <div class="input-label">Desired Username</div>
+                    <input type="text" id="signup-username" class="auth-input" placeholder="Enter username (min 3 chars)" autocomplete="off" onkeydown="handleAuthEnter(event, 'signup')">
+                    
+                    <div class="input-label">Password</div>
+                    <div class="password-container">
+                        <input type="password" id="signup-password" class="auth-input" placeholder="Enter password (min 3 chars)" autocomplete="off" onkeydown="handleAuthEnter(event, 'signup')">
+                        <button class="eye-btn" type="button" onclick="togglePasswordVisibility('signup-password', this)">👁️</button>
+                    </div>
+                    
+                    <button class="btn btn-primary" style="margin-top: 10px;" onclick="submitSignUp()">Create Account</button>
+                </div>
+
+                <div class="auth-footer">
+                    Already have an account? <span class="auth-link" onclick="showAuthScreen('signin')">Sign In Here</span>
+                </div>
+            </div>
+
+            <!-- VIEW 3: GAMEPLAY (PLAYER VIEW) -->
+            <div id="view-gameplay" style="display: none; flex-direction: column; gap: 20px;">
+                <div class="card-header-actions">
+                    <div class="welcome-msg" style="display: flex; align-items: center; gap: 8px;">
+                        <span id="player-avatar" style="font-size: 1.25rem;">👾</span>
+                        <span id="game-welcome">Welcome, Player!</span>
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <button class="icon-btn" onclick="showProfileScreen()" style="color: var(--accent-color);">Profile ⚙️</button>
+                        <button class="icon-btn" onclick="logout()">Logout 🚪</button>
+                    </div>
+                </div>
+
+                <div class="diff-selector" id="game-diff-selector">
+                    <button class="diff-btn" id="btn-easy" onclick="setDifficulty('easy')">Easy</button>
+                    <button class="diff-btn active" id="btn-medium" onclick="setDifficulty('medium')">Medium</button>
+                    <button class="diff-btn" id="btn-hard" onclick="setDifficulty('hard')">Hard</button>
+                </div>
+
+                <!-- Custom Game Dropdown Selector -->
+                <div style="display: flex; flex-direction: column; gap: 5px; text-align: center;">
+                    <div class="input-label">Or Play Saved Custom Game</div>
+                    <select id="custom-game-select" class="custom-select" onchange="playCustomAdminGame()">
+                        <option value="">-- Select a Custom Game --</option>
+                    </select>
+                </div>
+
+                <!-- Join Private Custom Game by ID code -->
+                <div style="display: flex; flex-direction: column; gap: 5px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 15px;">
+                    <div class="input-label">Or Join Private Game by ID</div>
+                    <div style="display: flex; gap: 10px; width: 100%;">
+                        <input type="text" id="join-game-id" class="id-input-field" placeholder="e.g. ROOM10" autocomplete="off" onkeydown="handleJoinKey(event)">
+                        <button class="btn btn-primary" onclick="joinCustomGameById()" style="padding: 10px 20px; border-radius: 12px;">Join</button>
+                    </div>
+                </div>
+
+                <!-- Create Custom Game Toggle & Panel -->
+                <div style="display: flex; flex-direction: column; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 15px;">
+                    <button class="btn btn-secondary" onclick="toggleCreateGamePanel()" style="width: 100%; font-size: 0.85rem; padding: 10px; border-radius: 12px;">🛠️ Create a Custom Game</button>
+                    
+                    <div id="create-game-panel" style="display: none; flex-direction: column; gap: 10px; margin-top: 10px; text-align: left;">
+                        <div class="input-label" style="color: #a5b4fc; font-weight: 800; font-size: 0.72rem; text-transform: uppercase;">Custom Game ID (Code)</div>
+                        <div style="display: flex; gap: 8px; width: 100%;">
+                            <input type="text" id="admin-game-id" class="id-input-field" placeholder="e.g. ROOM10" style="margin-bottom: 0; text-transform: uppercase; flex: 1;">
+                            <button type="button" class="btn btn-secondary" onclick="generateRandomGameId()" style="padding: 10px 14px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; white-space: nowrap;">🎲 Random</button>
+                        </div>
+
+
+
+                        <div class="input-row" style="grid-template-columns: 1fr 1fr 1fr; display: grid; gap: 10px; width: 100%;">
+                            <div>
+                                <div class="input-label" style="font-size: 0.65rem;">Min Range</div>
+                                <input type="number" id="admin-min-range" value="1" min="1" max="9999" oninput="adjustAdminMaxGuess()" style="width: 100%; text-align: center; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px; background: rgba(0, 0, 0, 0.3); color: var(--text-color); font-weight: 600;">
+                            </div>
+                            <div>
+                                <div class="input-label" style="font-size: 0.65rem;">Max Range</div>
+                                <input type="number" id="admin-range" value="100" min="5" max="20000" oninput="adjustAdminMaxGuess()" style="width: 100%; text-align: center; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px; background: rgba(0, 0, 0, 0.3); color: var(--text-color); font-weight: 600;">
+                            </div>
+                            <div>
+                                <div class="input-label" style="font-size: 0.65rem;">Attempts</div>
+                                <input type="number" id="admin-attempts" value="7" min="1" max="50" style="width: 100%; text-align: center; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px; background: rgba(0, 0, 0, 0.3); color: var(--text-color); font-weight: 600;">
+                            </div>
+                        </div>
+                        
+                        <div class="input-label" style="color: #a5b4fc; font-weight: 800; font-size: 0.72rem; text-transform: uppercase;">Secret Target Number (Optional)</div>
+                        <input type="number" id="admin-target" placeholder="Optional - random if blank" min="1" max="100" style="width: 100%; text-align: center; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px; background: rgba(0, 0, 0, 0.3); color: var(--text-color); font-weight: 600;">
+                        
+                        <button class="btn btn-primary" style="margin-top: 5px; background: var(--success-color); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);" onclick="applyAdminSettings()">Create & Save Custom Game</button>
+                    </div>
+                </div>
+
+                <div class="info-panel" style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 15px;">
+                    <h2 id="range-text">Guess a number between 1 and 100</h2>
+                    <div class="attempts-bar" id="attempts-container"></div>
+                </div>
+
+                <div class="input-group">
+                    <input type="number" id="guess-input" class="guess-input" min="1" max="100" placeholder="?" autocomplete="off" onkeydown="handleEnter(event)">
+                    
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="guess-btn" onclick="submitGuess()">
+                            GUESS
+                        </button>
+                        <button class="btn btn-secondary" onclick="newGame()">
+                            NEW GAME
+                        </button>
+                    </div>
+                </div>
+
+                <div class="feedback" id="feedback-banner">
+                    Make your first guess!
+                </div>
+
+                <div class="stats-panel">
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-val" id="stat-played">0</div>
+                            <div class="stat-lbl">Played</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-val" id="stat-winrate">0%</div>
+                            <div class="stat-lbl">Win Rate</div>
+                        </div>
+                    </div>
+                    
+                    <div class="best-records">
+                        <div>Easy Best: <span id="best-easy">-</span></div>
+                        <div>Medium Best: <span id="best-medium">-</span></div>
+                        <div>Hard Best: <span id="best-hard">-</span></div>
+                    </div>
+
+                    <button class="reset-btn" onclick="confirmResetStats()" style="margin-top: 15px; align-self: center;">Reset Database Records</button>
+                </div>
+            </div>
+
+            <!-- VIEW 4: PROFILE & SETTINGS -->
+            <div id="view-profile" style="display: none; flex-direction: column; gap: 20px;">
+                <div class="card-header-actions">
+                    <div class="welcome-msg">Player Profile</div>
+                    <button class="icon-btn" onclick="showGameplayScreen()" style="color: var(--accent-color);">Back to Game 🎮</button>
+                </div>
+
+                <!-- Active Profile Info Card -->
+                <div style="display: flex; align-items: center; gap: 15px; background: rgba(0, 0, 0, 0.2); padding: 15px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                    <div id="profile-avatar-preview" style="width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.05); border: 2px solid var(--accent-color); overflow: hidden;"></div>
+                    <div>
+                        <div class="welcome-msg" id="profile-username-display" style="font-size: 1.1rem; color: #f3f4f6; font-weight: 600;">Player</div>
+                        <div class="input-label" style="font-size: 0.65rem; margin-top: 2px;">Active Profile Picture</div>
+                    </div>
+                </div>
+
+                <!-- Avatar Selection Grid -->
+                <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+                    <div class="input-label" style="align-self: flex-start;">Choose Your Avatar Emoji</div>
+                    <div id="avatar-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%;">
+                        <!-- Emojis: 👾, 🚀, 🐉, 🦊, 🤖, 🦄, 🦁, 🐼 -->
+                        <button class="btn btn-secondary" onclick="updateProfileAvatar('👾')" style="font-size: 1.5rem; padding: 10px; border-radius: 12px;">👾</button>
+                        <button class="btn btn-secondary" onclick="updateProfileAvatar('🚀')" style="font-size: 1.5rem; padding: 10px; border-radius: 12px;">🚀</button>
+                        <button class="btn btn-secondary" onclick="updateProfileAvatar('🐉')" style="font-size: 1.5rem; padding: 10px; border-radius: 12px;">🐉</button>
+                        <button class="btn btn-secondary" onclick="updateProfileAvatar('🦊')" style="font-size: 1.5rem; padding: 10px; border-radius: 12px;">🦊</button>
+                        <button class="btn btn-secondary" onclick="updateProfileAvatar('🤖')" style="font-size: 1.5rem; padding: 10px; border-radius: 12px;">🤖</button>
+                        <button class="btn btn-secondary" onclick="updateProfileAvatar('🦄')" style="font-size: 1.5rem; padding: 10px; border-radius: 12px;">🦄</button>
+                        <button class="btn btn-secondary" onclick="updateProfileAvatar('🦁')" style="font-size: 1.5rem; padding: 10px; border-radius: 12px;">🦁</button>
+                        <button class="btn btn-secondary" onclick="updateProfileAvatar('🐼')" style="font-size: 1.5rem; padding: 10px; border-radius: 12px;">🐼</button>
+                    </div>
+                </div>
+
+                <!-- Custom URL and File Upload section -->
+                <div style="display: flex; flex-direction: column; gap: 12px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 15px;">
+                    <div class="input-label">Or Add Custom Image</div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div class="input-label" style="font-size: 0.65rem;">Image URL (online link)</div>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="url" id="profile-url-input" class="auth-input" placeholder="https://example.com/avatar.jpg" style="padding: 10px; text-align: left; font-size: 0.85rem; flex: 1;">
+                            <button class="btn btn-secondary" onclick="updateProfileAvatarFromUrl()" style="padding: 10px 14px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; white-space: nowrap;">Apply URL</button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div class="input-label" style="font-size: 0.65rem;">Upload from computer</div>
+                        <input type="file" id="profile-file-input" accept="image/*" onchange="uploadProfileFile(event)" style="display: none;">
+                        <button class="btn btn-secondary" onclick="document.getElementById('profile-file-input').click()" style="width: 100%; padding: 10px 15px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            📁 Choose Local Image File
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Password Reset Form -->
+                <div style="display: flex; flex-direction: column; gap: 12px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 15px;">
+                    <div class="input-label">Reset Password</div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                        <div class="input-label" style="font-size: 0.65rem;">New Password</div>
+                        <div class="password-container">
+                            <input type="password" id="profile-new-password" class="auth-input" placeholder="New Password (min 3 chars)" autocomplete="off">
+                            <button class="eye-btn" type="button" onclick="togglePasswordVisibility('profile-new-password', this)">👁️</button>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
+                </div>
+
+                <!-- Player Statistics -->
+                <div style="display: flex; flex-direction: column; gap: 12px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 15px;">
+                    <div class="input-label">Personal Game Stats</div>
+                    <div class="stats-panel" style="margin-top: 0; border-top: none; padding-top: 0;">
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <div class="stat-val" id="profile-stat-played">0</div>
+                                <div class="stat-lbl">Played</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-val" id="profile-stat-winrate">0%</div>
+                                <div class="stat-lbl">Win Rate</div>
+                            </div>
+                        </div>
+                        
+                        <div class="best-records" style="margin-top: 10px;">
+                            <div>Easy Best: <span id="profile-best-easy">-</span></div>
+                            <div>Medium Best: <span id="profile-best-medium">-</span></div>
+                            <div>Hard Best: <span id="profile-best-hard">-</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playBeep(frequency, duration, type = "sine") {
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+                
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.log("Audio not supported or blocked: " + e);
+            }
+        }
+
+        function playWinArpeggio() {
+            setTimeout(() => playBeep(261.63, 0.15), 0); // C4
+            setTimeout(() => playBeep(329.63, 0.15), 150); // E4
+            setTimeout(() => playBeep(392.00, 0.15), 300); // G4
+            setTimeout(() => playBeep(523.25, 0.4, "triangle"), 450); // C5
+        }
+
+        function playLossSound() {
+            setTimeout(() => playBeep(180, 0.2, "sawtooth"), 0);
+            setTimeout(() => playBeep(150, 0.2, "sawtooth"), 200);
+            setTimeout(() => playBeep(120, 0.5, "sawtooth"), 400);
+        }
+
+        const COLORS = {
+            accent: '#6366f1',
+            success: '#10b981',
+            error: '#ef4444',
+            warning: '#f59e0b',
+            text: '#f3f4f6',
+            textMuted: '#9ca3af'
+        };
+
+        let currentUsername = "";
+        let currentPassword = "";
+
+        let selectedDifficulty = 'medium';
+        let maxAttempts = 7;
+        let attemptsLeft = 7;
+        let isGameActive = false;
+        let activeCustomGameId = "";
+
+        // Offline Fallback Mode State
+        let isOfflineMode = false;
+        let offlineSecretTarget = 0;
+        let offlineMinRange = 1;
+        let offlineMaxRange = 100;
+        let offlineGuessesCount = 0;
+        let offlineGuessHistory = [];
+
+        function updateNetworkStatusUI() {
+            const badge = document.getElementById('network-status-badge');
+            if (!badge) return;
+            if (isOfflineMode) {
+                badge.className = 'network-badge offline';
+                badge.textContent = '⚡ Offline Mode';
+            } else {
+                badge.className = 'network-badge online';
+                badge.textContent = '🟢 Online';
+            }
+        }
+
+        // Local Storage CRUD helpers for Offline Mode
+        function getLocalAccounts() {
+            return JSON.parse(localStorage.getItem('local_accounts') || '{}');
+        }
+
+        function saveLocalAccounts(accounts) {
+            localStorage.setItem('local_accounts', JSON.stringify(accounts));
+        }
+
+        function getLocalCustomGames() {
+            return JSON.parse(localStorage.getItem('local_custom_games') || '[]');
+        }
+
+        function saveLocalCustomGames(games) {
+            localStorage.setItem('local_custom_games', JSON.stringify(games));
+        }
+
+        // safeFetch detects connection failure to transition into Offline Mode
+        async function safeFetch(url, options = {}) {
+            try {
+                const res = await fetch(url, options);
+                if (isOfflineMode) {
+                    isOfflineMode = false;
+                    updateNetworkStatusUI();
+                    console.log("Reconnected to Server. Switched to Online Mode.");
+                }
+                return res;
+            } catch (err) {
+                if (err instanceof TypeError || err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
+                    if (!isOfflineMode) {
+                        isOfflineMode = true;
+                        updateNetworkStatusUI();
+                        console.warn("Server connection failed. Switched to Offline Mode.");
+                    }
+                    throw new Error("SERVER_OFFLINE");
+                }
+                throw err;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // Register Service Worker for PWA
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered:', reg.scope))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            }
+
+            const savedUser = sessionStorage.getItem('username');
+            const savedPass = sessionStorage.getItem('password');
+            
+            if (savedUser && savedPass) {
+                currentUsername = savedUser;
+                currentPassword = savedPass;
+
+                showView('gameplay');
+                document.getElementById('game-welcome').textContent = `Welcome, ${currentUsername}!`;
+                loadStats();
+                loadCustomGamesDropdown();
+                newGame();
+            } else {
+                showView('signin');
+            }
+        });
+
+        function showView(viewName) {
+            document.getElementById('view-signin').style.display = viewName === 'signin' ? 'flex' : 'none';
+            document.getElementById('view-signup').style.display = viewName === 'signup' ? 'flex' : 'none';
+            document.getElementById('view-gameplay').style.display = viewName === 'gameplay' ? 'flex' : 'none';
+            document.getElementById('view-profile').style.display = viewName === 'profile' ? 'flex' : 'none';
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') {
+                submitGuess();
+            }
+        }
+
+        function handleAuthEnter(e, flow) {
+            if (e.key === 'Enter') {
+                if (flow === 'signin') submitSignIn();
+                if (flow === 'signup') submitSignUp();
+            }
+        }
+
+        function handleJoinKey(e) {
+            if (e.key === 'Enter') {
+                joinCustomGameById();
+            }
+        }
+
+        function showAuthScreen(screen) {
+            playBeep(440, 0.05);
+            showView(screen);
+            document.getElementById('signin-username').value = '';
+            document.getElementById('signin-password').value = '';
+            document.getElementById('signup-username').value = '';
+            document.getElementById('signup-password').value = '';
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                btn.textContent = '👁️';
+            }
+            playBeep(440, 0.03);
+        }
+
+        function toggleCreateGamePanel() {
+            const panel = document.getElementById('create-game-panel');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'flex';
+                playBeep(440, 0.05);
+            } else {
+                panel.style.display = 'none';
+                playBeep(330, 0.05);
+            }
+        }
+
+        function submitSignUp() {
+            const usernameInput = document.getElementById('signup-username');
+            const passwordInput = document.getElementById('signup-password');
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            if (username.length < 3 || password.length < 3) {
+                alert("Username and Password must be at least 3 characters long!");
+                playBeep(220, 0.15, "square");
+                return;
+            }
+
+            safeFetch(`/api/signup?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
+                    return res.json();
+                })
+                .then(data => {
+                    alert(`Account created successfully for ${username}! Please Sign In.`);
+                    playBeep(520, 0.15);
+                    showAuthScreen('signin');
+                    document.getElementById('signin-username').value = username;
+                    document.getElementById('signin-password').focus();
+                })
+                .catch(err => {
+                    if (err.message === "SERVER_OFFLINE") {
+                        const accounts = getLocalAccounts();
+                        if (accounts[username]) {
+                            alert("Sign Up failed: Username already exists locally!");
+                            playBeep(220, 0.15, "square");
+                            return;
+                        }
+                        accounts[username] = {
+                            username: username,
+                            password: password,
+                            avatar: "👾",
+                            gamesPlayed: 0,
+                            gamesWon: 0,
+                            easyBest: 999,
+                            mediumBest: 999,
+                            hardBest: 999
+                        };
+                        saveLocalAccounts(accounts);
+                        alert(`[Offline Mode] Account created successfully for ${username}! Please Sign In.`);
+                        playBeep(520, 0.15);
+                        showAuthScreen('signin');
+                        document.getElementById('signin-username').value = username;
+                        document.getElementById('signin-password').focus();
+                    } else {
+                        alert("Sign Up failed: " + err.message);
+                        playBeep(220, 0.15, "square");
+                    }
+                });
+        }
+
+        function submitSignIn() {
+            const usernameInput = document.getElementById('signin-username');
+            const passwordInput = document.getElementById('signin-password');
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!username || !password) {
+                alert("Please enter both username and password!");
+                playBeep(220, 0.15, "square");
+                return;
+            }
+
+            safeFetch(`/api/signin?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
+                    return res.json();
+                })
+                .then(data => {
+                    currentUsername = username;
+                    currentPassword = password;
+
+                    sessionStorage.setItem('username', currentUsername);
+                    sessionStorage.setItem('password', currentPassword);
+
+                    showView('gameplay');
+                    document.getElementById('game-welcome').textContent = `Welcome, ${currentUsername}!`;
+                    loadStats();
+                    loadCustomGamesDropdown();
+                    newGame();
+                    playBeep(520, 0.15);
+                })
+                .catch(err => {
+                    if (err.message === "SERVER_OFFLINE") {
+                        const accounts = getLocalAccounts();
+                        const acc = accounts[username];
+                        if (acc && acc.password === password) {
+                            currentUsername = username;
+                            currentPassword = password;
+                            sessionStorage.setItem('username', currentUsername);
+                            sessionStorage.setItem('password', currentPassword);
+                            showView('gameplay');
+                            document.getElementById('game-welcome').textContent = `Welcome, ${currentUsername}! (Offline)`;
+                            loadStats();
+                            loadCustomGamesDropdown();
+                            newGame();
+                            playBeep(520, 0.15);
+                        } else {
+                            alert("Sign In failed: Invalid username or password (offline mode)!");
+                            playBeep(180, 0.3, "sawtooth");
+                        }
+                    } else {
+                        alert("Sign In failed: " + err.message);
+                        playBeep(180, 0.3, "sawtooth");
+                    }
+                });
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            currentUsername = "";
+            currentPassword = "";
+            showView('signin');
+            stopConfetti();
+            playBeep(330, 0.15);
+        }
+
+        function setDifficulty(diff) {
+            if (selectedDifficulty === diff) return;
+            selectedDifficulty = diff;
+            
+            document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${diff}`).classList.add('active');
+            document.getElementById('custom-game-select').value = "";
+
+            newGame();
+        }
+
+        function renderAttempts(remaining, total) {
+            const container = document.getElementById('attempts-container');
+            container.innerHTML = '';
+            for (let i = 0; i < total; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                if (i < remaining) {
+                    dot.classList.add('active');
+                }
+                container.appendChild(dot);
+            }
+        }
+
+        function updateFeedback(text, color) {
+            const banner = document.getElementById('feedback-banner');
+            banner.textContent = text;
+            banner.style.color = color;
+            banner.style.borderColor = color + '22';
+            banner.style.background = color + '0a';
+        }
+
+        function loadCustomGamesDropdown() {
+            safeFetch('/api/games/list')
+                .then(res => res.json())
+                .then(games => {
+                    renderCustomGamesDropdown(games);
+                })
+                .catch(err => {
+                    if (err.message === "SERVER_OFFLINE") {
+                        const games = getLocalCustomGames();
+                        renderCustomGamesDropdown(games);
+                    } else {
+                        console.error("Error loading games list", err);
+                    }
+                });
+        }
+
+        function renderCustomGamesDropdown(games) {
+            const select = document.getElementById('custom-game-select');
+            select.innerHTML = '<option value="">-- Select a Custom Game --</option>';
+            if (games.length === 0) {
+                return;
+            }
+            games.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.id;
+                opt.textContent = `Custom Game: ${g.id} (Range ${g.minRange || 1}-${g.maxRange}, ${g.maxAttempts} Tries)`;
+                select.appendChild(opt);
+            });
+        }
+
+        function playCustomAdminGame() {
+            const select = document.getElementById('custom-game-select');
+            const gameId = select.value;
+            if (!gameId) return;
+
+            safeFetch(`/api/start?gameId=${encodeURIComponent(gameId)}`, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
+                    return res.json();
+                })
+                .then(data => {
+                    maxAttempts = data.maxAttempts;
+                    attemptsLeft = data.maxAttempts;
+                    isGameActive = true;
+                    selectedDifficulty = 'admin'; // Custom
+                    activeCustomGameId = gameId; // Store active custom game ID
+
+                    document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('active'));
+
+                    const minVal = data.minRange || 1;
+                    document.getElementById('range-text').textContent = `Guess a number between ${minVal} and ${data.maxRange}`;
+                    const input = document.getElementById('guess-input');
+                    input.min = minVal;
+                    input.max = data.maxRange;
+                    input.value = '';
+                    input.disabled = false;
+                    input.focus();
+
+                    document.getElementById('guess-btn').disabled = false;
+                    renderAttempts(attemptsLeft, maxAttempts);
+                    updateFeedback(`🎮 Playing Admin Game: ${data.difficulty}!`, COLORS.success);
+
+                    playBeep(520, 0.15);
+                    stopConfetti();
+                })
+                .catch(err => {
+                    if (err.message === "SERVER_OFFLINE") {
+                        selectedDifficulty = 'admin';
+                        activeCustomGameId = gameId;
+                        newGame();
+                        playBeep(520, 0.15);
+                    } else {
+                        alert("Failed to load custom game: " + err.message);
+                        select.value = "";
+                    }
+                });
+        }
+
+        function joinCustomGameById() {
+            const input = document.getElementById('join-game-id');
+            const code = input.value.trim().toUpperCase();
+
+            if (!code) {
+                input.classList.add('shake');
+                setTimeout(() => input.classList.remove('shake'), 300);
+                playBeep(220, 0.15, "square");
+                return;
+            }
+
+            safeFetch(`/api/start?gameId=${encodeURIComponent(code)}`, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
+                    return res.json();
+                })
+                .then(data => {
+                    maxAttempts = data.maxAttempts;
+                    attemptsLeft = data.maxAttempts;
+                    isGameActive = true;
+                    selectedDifficulty = 'admin'; // Custom mode
+                    activeCustomGameId = code; // Store active custom game ID
+
+                    document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('active'));
+                    document.getElementById('custom-game-select').value = ""; // Reset dropdown
+
+                    const minVal = data.minRange || 1;
+                    document.getElementById('range-text').textContent = `Guess a number between ${minVal} and ${data.maxRange}`;
+                    const guessInput = document.getElementById('guess-input');
+                    guessInput.min = minVal;
+                    guessInput.max = data.maxRange;
+                    guessInput.value = '';
+                    guessInput.disabled = false;
+                    guessInput.focus();
+
+                    document.getElementById('guess-btn').disabled = false;
+                    renderAttempts(attemptsLeft, maxAttempts);
+                    updateFeedback(`🎮 Joined game: ${data.difficulty} (ID: ${code})`, COLORS.success);
+
+                    input.value = '';
+                    playBeep(520, 0.15);
+                    stopConfetti();
+                })
+                .catch(err => {
+                    if (err.message === "SERVER_OFFLINE") {
+                        const games = getLocalCustomGames();
+                        const g = games.find(game => game.id === code);
+                        if (g) {
+                            selectedDifficulty = 'admin';
+                            activeCustomGameId = code;
+                            newGame();
+                            input.value = '';
+                            playBeep(520, 0.15);
+                        } else {
+                            input.classList.add('shake');
+                            setTimeout(() => input.classList.remove('shake'), 300);
+                            alert("Join failed: Custom game ID not found locally!");
+                            playBeep(220, 0.15, "square");
+                        }
+                    } else {
+                        input.classList.add('shake');
+                        setTimeout(() => input.classList.remove('shake'), 300);
+                        alert("Join failed: " + err.message);
+                        playBeep(220, 0.15, "square");
+                    }
+                });
+        }
+
+        function newGame() {
+            let url = `/api/start?difficulty=${selectedDifficulty}`;
+            if (selectedDifficulty === 'admin') {
+                url = `/api/start?gameId=${encodeURIComponent(activeCustomGameId)}`;
+            }
+
+            safeFetch(url, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    setupNewGameUI(data);
+                })
+                .catch(err => {
+                    if (err.message === "SERVER_OFFLINE") {
+                        let data = {};
+                        if (selectedDifficulty === 'admin') {
+                            const games = getLocalCustomGames();
+                            const g = games.find(game => game.id === activeCustomGameId);
+                            if (!g) {
+                                alert("Offline custom game not found!");
+                                return;
+                            }
+                            data = {
+                                status: "success",
+                                difficulty: g.id,
+                                minRange: g.minRange || 1,
+                                maxRange: g.maxRange,
+                                maxAttempts: g.maxAttempts
+                            };
+                            
+                            if (g.targetNumber > 0) {
+                                offlineSecretTarget = g.targetNumber;
+                            } else {
+                                offlineSecretTarget = Math.floor(Math.random() * (g.maxRange - (g.minRange || 1) + 1)) + (g.minRange || 1);
+                            }
+                        } else {
+                            let min = 1;
+                            let max = 100;
+                            let tries = 7;
+                            let diffName = "Medium";
+                            
+                            if (selectedDifficulty === 'easy') {
+                                max = 50; tries = 10; diffName = "Easy";
+                            } else if (selectedDifficulty === 'hard') {
+                                max = 250; tries = 5; diffName = "Hard";
+                            }
+                            
+                            data = {
+                                status: "success",
+                                difficulty: diffName,
+                                minRange: min,
+                                maxRange: max,
+                                maxAttempts: tries
+                            };
+                            offlineSecretTarget = Math.floor(Math.random() * max) + 1;
+                        }
+                        
+                        setupNewGameUI(data);
+                        if (selectedDifficulty === 'admin') {
+                            updateFeedback(`🎮 Playing Custom Game (Offline ID: ${activeCustomGameId})`, COLORS.success);
+                        } else {
+                            updateFeedback("Make your first guess! (Offline)", COLORS.text);
+                        }
+                    } else {
+                        console.error("Error starting game", err);
+                        updateFeedback("Error connecting to server!", COLORS.error);
+                    }
+                });
+        }
+
+        function setupNewGameUI(data) {
+            maxAttempts = data.maxAttempts;
+            attemptsLeft = data.maxAttempts;
+            isGameActive = true;
+
+            if (selectedDifficulty !== 'admin') {
+                document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(`btn-${selectedDifficulty}`).classList.add('active');
+                document.getElementById('custom-game-select').value = "";
+            }
+
+            const minVal = data.minRange || 1;
+            offlineMinRange = minVal;
+            offlineMaxRange = data.maxRange;
+
+            document.getElementById('range-text').textContent = `Guess a number between ${minVal} and ${data.maxRange}`;
+            const input = document.getElementById('guess-input');
+            input.min = minVal;
+            input.max = data.maxRange;
+            input.value = '';
+            input.disabled = false;
+            input.focus();
+
+            document.getElementById('guess-btn').disabled = false;
+            renderAttempts(attemptsLeft, maxAttempts);
+            stopConfetti();
+        }
+
+        function submitGuess() {
+            if (!isGameActive) return;
+
+            const input = document.getElementById('guess-input');
+            const rawGuess = input.value.trim();
+
+            if (!rawGuess) {
+                shakeInput();
+                updateFeedback("Enter a number first!", COLORS.warning);
+                playBeep(220, 0.15, "square");
+                return;
+            }
+
+            const guess = parseInt(rawGuess);
+            const minVal = parseInt(input.min) || 1;
+            const maxVal = parseInt(input.max) || 100;
+            if (isNaN(guess) || guess < minVal || guess > maxVal) {
+                shakeInput();
+                updateFeedback(`Must be between ${minVal} and ${maxVal}!`, COLORS.warning);
+                playBeep(220, 0.15, "square");
+                return;
+            }
+
+            safeFetch(`/api/guess?guess=${guess}&username=${encodeURIComponent(currentUsername)}`, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(errData => { throw new Error(errData.error); });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    handleGuessResponse(data);
+                })
+                .catch(err => {
+                    if (err.message === "SERVER_OFFLINE") {
+                        if (offlineGuessHistory.includes(guess)) {
+                            shakeInput();
+                            updateFeedback(`Already guessed ${guess}!`, COLORS.warning);
+                            playBeep(220, 0.15, "square");
+                            return;
+                        }
+                        
+                        offlineGuessesCount++;
+                        attemptsLeft--;
+                        offlineGuessHistory.push(guess);
+                        
+                        const correct = (guess === offlineSecretTarget);
+                        const tooHigh = (guess > offlineSecretTarget);
+                        const tooLow = (guess < offlineSecretTarget);
+                        const gameOver = (!correct && attemptsLeft <= 0);
+                        
+                        let closeness = "cold";
+                        const diffVal = Math.abs(guess - offlineSecretTarget);
+                        if (correct) closeness = "correct";
+                        else if (diffVal <= 2) closeness = "burning_hot";
+                        else if (diffVal <= 5) closeness = "hot";
+                        else if (diffVal <= 15) closeness = "warm";
+                        
+                        if (correct || gameOver) {
+                            isGameActive = false;
+                            
+                            const accounts = getLocalAccounts();
+                            const acc = accounts[currentUsername] || {
+                                username: currentUsername,
+                                avatar: "👾",
+                                gamesPlayed: 0,
+                                gamesWon: 0,
+                                easyBest: 999,
+                                mediumBest: 999,
+                                hardBest: 999
+                            };
+                            
+                            acc.gamesPlayed++;
+                            if (correct) {
+                                acc.gamesWon++;
+                                if (selectedDifficulty === 'easy' && offlineGuessesCount < acc.easyBest) {
+                                    acc.easyBest = offlineGuessesCount;
+                                } else if (selectedDifficulty === 'medium' && offlineGuessesCount < acc.mediumBest) {
+                                    acc.mediumBest = offlineGuessesCount;
+                                } else if (selectedDifficulty === 'hard' && offlineGuessesCount < acc.hardBest) {
+                                    acc.hardBest = offlineGuessesCount;
+                                }
+                            }
+                            
+                            accounts[currentUsername] = acc;
+                            saveLocalAccounts(accounts);
+                        }
+                        
+                        const mockData = {
+                            correct: correct,
+                            tooHigh: tooHigh,
+                            tooLow: tooLow,
+                            closeness: closeness,
+                            attemptsLeft: attemptsLeft,
+                            gameOver: gameOver,
+                            guessesCount: offlineGuessesCount,
+                            targetNumber: offlineSecretTarget
+                        };
+                        
+                        handleGuessResponse(mockData);
+                    } else {
+                        shakeInput();
+                        updateFeedback(err.message || "Failed to parse guess!", COLORS.warning);
+                        playBeep(220, 0.15, "square");
+                    }
+                });
+        }
+
+        function handleGuessResponse(data) {
+            attemptsLeft = data.attemptsLeft;
+            renderAttempts(attemptsLeft, maxAttempts);
+
+            if (data.correct) {
+                isGameActive = false;
+                const input = document.getElementById('guess-input');
+                input.disabled = true;
+                document.getElementById('guess-btn').disabled = true;
+                updateFeedback(`🎉 Correct! You got it in ${data.guessesCount} tries!`, COLORS.success);
+                playWinArpeggio();
+                startConfetti();
+                loadStats();
+                
+                offlineGuessesCount = 0;
+                offlineGuessHistory = [];
+            } else if (data.gameOver) {
+                isGameActive = false;
+                const input = document.getElementById('guess-input');
+                input.disabled = true;
+                document.getElementById('guess-btn').disabled = true;
+                updateFeedback(`💥 Game Over! The number was ${data.targetNumber}.`, COLORS.error);
+                playLossSound();
+                loadStats();
+                
+                offlineGuessesCount = 0;
+                offlineGuessHistory = [];
+            } else {
+                const direction = data.tooHigh ? "Too High!" : "Too Low!";
+                let color = COLORS.text;
+                let hotColdText = "";
+
+                switch(data.closeness) {
+                    case "burning_hot":
+                        hotColdText = "Burning Hot! 🔥";
+                        color = COLORS.error;
+                        playBeep(520, 0.08);
+                        break;
+                    case "hot":
+                        hotColdText = "Hot! ☀️";
+                        color = '#ec4899';
+                        playBeep(440, 0.08);
+                        break;
+                    case "warm":
+                        hotColdText = "Warm ⛅";
+                        color = COLORS.warning;
+                        playBeep(370, 0.08);
+                        break;
+                    default:
+                        hotColdText = "Cold ❄️";
+                        color = COLORS.accent;
+                        playBeep(290, 0.08);
+                }
+
+                updateFeedback(`${direction} (It's ${hotColdText})`, color);
+                const input = document.getElementById('guess-input');
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function shakeInput() {
+            const input = document.getElementById('guess-input');
+            input.classList.add('shake');
+            setTimeout(() => input.classList.remove('shake'), 300);
+        }
+
+        function renderAvatar(elementId, avatarString, size = "28px") {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            const avatar = avatarString || "👾";
+            if (avatar.startsWith("http") || avatar.startsWith("data:")) {
+                el.innerHTML = `<img src="${avatar}" style="width: ${size}; height: ${size}; border-radius: 50%; object-fit: cover; display: inline-block; vertical-align: middle; border: 1px solid rgba(255, 255, 255, 0.2);">`;
+            } else {
+                el.innerHTML = `<span style="font-size: calc(${size} * 0.7); line-height: ${size}; display: inline-block; vertical-align: middle;">${avatar}</span>`;
+            }
+        }
+
+        function loadStats() {
+            if (!currentUsername) return;
+            safeFetch(`/api/stats?username=${encodeURIComponent(currentUsername)}`)
+                .then(res => res.json())
+                .then(data => {
+                    renderStatsData(data);
+                })
+                .catch(err => {
+                    if (err.message === "SERVER_OFFLINE") {
+                        const accounts = getLocalAccounts();
+                        const acc = accounts[currentUsername] || {
+                            username: currentUsername,
+                            avatar: "👾",
+                            gamesPlayed: 0,
+                            gamesWon: 0,
+                            easyBest: 999,
+                            mediumBest: 999,
+                            hardBest: 999
+                        };
+                        renderStatsData(acc);
+                    } else {
+                        console.error("Error loading stats", err);
+                    }
+                });
+        }
+
+        function renderStatsData(data) {
+            document.getElementById('stat-played').textContent = data.gamesPlayed;
+            
+            const winrate = data.gamesPlayed > 0 
+                ? Math.round((data.gamesWon / data.gamesPlayed) * 100) 
+                : 0;
+            document.getElementById('stat-winrate').textContent = winrate + '%';
+
+            document.getElementById('best-easy').textContent = data.easyBest === 999 ? '-' : data.easyBest;
+            document.getElementById('best-medium').textContent = data.mediumBest === 999 ? '-' : data.mediumBest;
+            document.getElementById('best-hard').textContent = data.hardBest === 999 ? '-' : data.hardBest;
+
+            // Update player badge avatar
+            const avatar = data.avatar || "👾";
+            renderAvatar('player-avatar', avatar, "28px");
+            renderAvatar('profile-avatar-preview', avatar, "50px");
+
+            const pUserDisplay = document.getElementById('profile-username-display');
+            if (pUserDisplay) pUserDisplay.textContent = currentUsername;
+
+            // Update profile page stats if elements exist
+            const pPlayed = document.getElementById('profile-stat-played');
+            const pWinrate = document.getElementById('profile-stat-winrate');
+            const pEasy = document.getElementById('profile-best-easy');
+            const pMedium = document.getElementById('profile-best-medium');
+            const pHard = document.getElementById('profile-best-hard');
+            
+            if (pPlayed) pPlayed.textContent = data.gamesPlayed;
+            if (pWinrate) pWinrate.textContent = winrate + '%';
+            if (pEasy) pEasy.textContent = data.easyBest === 999 ? '-' : data.easyBest;
+            if (pMedium) pMedium.textContent = data.mediumBest === 999 ? '-' : data.mediumBest;
+            if (pHard) pHard.textContent = data.hardBest === 999 ? '-' : data.hardBest;
+
+            highlightActiveAvatarButton(avatar);
+        }
+
+        function highlightActiveAvatarButton(avatar) {
+            const grid = document.getElementById('avatar-grid');
+            if (!grid) return;
+            const buttons = grid.getElementsByTagName('button');
+            for (let btn of buttons) {
+                if (btn.textContent.trim() === avatar) {
+                    btn.style.borderColor = 'var(--accent-color)';
+                    btn.style.background = 'var(--accent-glow)';
+                } else {
+                    btn.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+                    btn.style.background = 'rgba(255, 255, 255, 0.07)';
+                }
+            }
+        }
+
+        function showProfileScreen() {
+            playBeep(440, 0.05);
+            showView('profile');
+            document.getElementById('profile-new-password').value = '';
+            loadStats();
+        }
+
+        function showGameplayScreen() {
+            playBeep(440, 0.05);
+            showView('gameplay');
+        }
+
+        function updateProfileAvatar(emojiOrUrl) {
+            if (!currentUsername || !currentPassword) return;
+            
+            safeFetch(`/api/profile/update-avatar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: currentUsername,
+                    password: currentPassword,
+                    avatar: emojiOrUrl
+                })
+            })
+                .then(res => {
+                    if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
+                    return res.json();
+                })
+                .then(data => {
+                    playBeep(600, 0.1);
+                    loadStats();
+                })
+                .catch(err => {
+                    if (err.message === "SERVER_OFFLINE") {
+                        const accounts = getLocalAccounts();
+                        if (accounts[currentUsername]) {
+                            accounts[currentUsername].avatar = emojiOrUrl;
+                            saveLocalAccounts(accounts);
+                            playBeep(600, 0.1);
+                            loadStats();
+                        }
+                    } else {
+                        alert("Failed to update avatar: " + err.message);
+                        playBeep(220, 0.15, "square");
+                    }
+                });
+        }
+
+        function updateProfileAvatarFromUrl() {
+            const urlInput = document.getElementById('profile-url-input');
+            const url = urlInput.value.trim();
+            if (!url) {
+                alert("Please enter a valid image URL!");
+                return;
+            }
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                alert("Image URL must start with http:// or https://");
+                return;
+            }
+            updateProfileAvatar(url);
+            urlInput.value = '';
+        }
+
+        function uploadProfileFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith("image/")) {
+                alert("Please select an image file!");
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                alert("File is too large! Maximum size allowed is 2MB.");
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Url = e.target.result;
+                updateProfileAvatar(base64Url);
+            };
+            reader.onerror = function() {
+                alert("Error reading file!");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function changePassword() {
+            const newPasswordInput = document.getElementById('profile-new-password');
+            const newPassword = newPasswordInput.value;
+
+            if (newPassword.length < 3) {
+                alert("Password must be at least 3 characters long!");
+                playBeep(220, 0.15, "square");
+                return;
+            }
+
+            safeFetch(`/api/profile/update-password?username=${encodeURIComponent(currentUsername)}&password=${encodeURIComponent(currentPassword)}&newPassword=${encodeURIComponent(newPassword)}`, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
+                    return res.json();
+                })
+                .then(data => {
+                    alert("Password updated successfully!");
+                    playBeep(520, 0.15);
+                    currentPassword = newPassword;
+                    sessionStorage.setItem('password', currentPassword);
+                    newPasswordInput.value = '';
+                })
+                .catch(err => {
+                    if (err.message === "SERVER_OFFLINE") {
+                        const accounts = getLocalAccounts();
+                        if (accounts[currentUsername]) {
+                            accounts[currentUsername].password = newPassword;
+                            saveLocalAccounts(accounts);
+                            alert("[Offline Mode] Password updated successfully!");
+                            playBeep(520, 0.15);
+                            currentPassword = newPassword;
+                            sessionStorage.setItem('password', currentPassword);
+                            newPasswordInput.value = '';
+                        }
+                    } else {
+                        alert("Failed to update password: " + err.message);
+                        playBeep(220, 0.15, "square");
+                    }
+                });
+        }
+
+        function loadAdminDashboard() {
+            adjustAdminMaxGuess();
+            fetch(`/api/admin/players?adminUser=${encodeURIComponent(currentUsername)}&adminPass=${encodeURIComponent(currentPassword)}`)
+                .then(res => {
+                    if (!res.ok) throw new Error("Unauthorized");
+                    return res.json();
+                })
+                .then(players => {
+                    const tbody = document.getElementById('admin-players-list');
+                    if (players.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No player records</td></tr>`;
+                        return;
+                    }
+                    
+                    tbody.innerHTML = players.map(p => {
+                        const rate = p.gamesPlayed > 0 ? Math.round((p.gamesWon / p.gamesPlayed) * 100) + '%' : '0%';
+                        return `
+                            <tr>
+                                <td><strong style="color: #a5b4fc;">${escapeHtml(p.username)}</strong></td>
+                                <td>${p.gamesPlayed}</td>
+                                <td>${p.gamesWon} (${rate})</td>
+                                <td>${p.easyBest === 999 ? '-' : p.easyBest}</td>
+                                <td>${p.mediumBest === 999 ? '-' : p.mediumBest}</td>
+                                <td>${p.hardBest === 999 ? '-' : p.hardBest}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                })
+                .catch(err => {
+                    console.error("Admin Auth Error", err);
+                    logout();
+                });
+        }
+
+        function generateRandomGameId() {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            let code = "GM-";
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('admin-game-id').value = code;
+            playBeep(600, 0.1);
+        }
+
+        function adjustAdminMaxGuess() {
+            const minRangeInput = document.getElementById('admin-min-range');
+            const rangeInput = document.getElementById('admin-range');
+            const targetInput = document.getElementById('admin-target');
+            if (!targetInput) return;
+            
+            const minVal = parseInt(minRangeInput.value) || 1;
+            const maxVal = parseInt(rangeInput.value) || 100;
+            
+            targetInput.min = minVal;
+            targetInput.max = maxVal;
+            targetInput.placeholder = `Optional (e.g. ${minVal} to ${maxVal})`;
+        }
+
+        function applyAdminSettings() {
+            const gameId = document.getElementById('admin-game-id').value.trim().toUpperCase();
+            const minRangeVal = parseInt(document.getElementById('admin-min-range').value) || 1;
+            const rangeVal = parseInt(document.getElementById('admin-range').value) || 100;
+            const attemptsVal = parseInt(document.getElementById('admin-attempts').value) || 7;
+            const targetRaw = document.getElementById('admin-target').value.trim();
+
+            if (!gameId) {
+                alert("Please enter or generate a custom Game ID code!");
+                playBeep(220, 0.15, "square");
+                return;
+            }
+
+            if (minRangeVal < 1) {
+                alert("Min range must be at least 1!");
+                playBeep(220, 0.15, "square");
+                return;
+            }
+
+            if (rangeVal <= minRangeVal + 3) {
+                alert("Max range must be at least Min Range + 4!");
+                playBeep(220, 0.15, "square");
+                return;
+            }
+
+            if (targetRaw !== "") {
+                const targetVal = parseInt(targetRaw);
+                if (isNaN(targetVal) || targetVal < minRangeVal || targetVal > rangeVal) {
+                    alert(`Secret target number must be between ${minRangeVal} and ${rangeVal} (or leave empty for random).`);
+                    playBeep(220, 0.15, "square");
+                    return;
+                }
+            }
+
+            safeFetch(`/api/admin/create-game?id=${encodeURIComponent(gameId)}&minRange=${minRangeVal}&maxRange=${rangeVal}&targetNumber=${encodeURIComponent(targetRaw)}&maxAttempts=${attemptsVal}&adminUser=${encodeURIComponent(currentUsername)}&adminPass=${encodeURIComponent(currentPassword)}`, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(e => { throw new Error(e.error); });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    alert(`Custom Game (ID: ${gameId}) saved successfully!`);
+                    playBeep(520, 0.15);
+                    document.getElementById('admin-game-id').value = '';
+                    document.getElementById('admin-target').value = '';
+                    loadCustomGamesDropdown();
+                })
+                .catch(err => {
+                    if (err.message === "SERVER_OFFLINE") {
+                        const games = getLocalCustomGames();
+                        if (games.some(g => g.id === gameId)) {
+                            alert("A custom game with this ID already exists locally!");
+                            playBeep(220, 0.15, "square");
+                            return;
+                        }
+                        
+                        games.push({
+                            id: gameId,
+                            minRange: minRangeVal,
+                            maxRange: rangeVal,
+                            maxAttempts: attemptsVal,
+                            targetNumber: targetRaw === "" ? 0 : parseInt(targetRaw)
+                        });
+                        saveLocalCustomGames(games);
+                        
+                        alert(`[Offline Mode] Custom Game (ID: ${gameId}) saved successfully!`);
+                        playBeep(520, 0.15);
+                        document.getElementById('admin-game-id').value = '';
+                        document.getElementById('admin-target').value = '';
+                        loadCustomGamesDropdown();
+                    } else {
+                        alert("Failed to create custom game: " + err.message);
+                        playBeep(220, 0.15, "square");
+                    }
+                });
+        }
+
+        function confirmResetStats() {
+            if (confirm("WARNING: This will delete ALL registered accounts, custom games, and statistics. Continue?")) {
+                safeFetch('/api/reset', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(() => {
+                        logout();
+                        alert("Database wiped successfully! Returning to Sign In.");
+                    })
+                    .catch(err => {
+                        if (err.message === "SERVER_OFFLINE") {
+                            localStorage.removeItem('local_accounts');
+                            localStorage.removeItem('local_custom_games');
+                            logout();
+                            alert("[Offline Mode] Local data cleared successfully! Returning to Sign In.");
+                        } else {
+                            console.error("Error resetting stats", err);
+                        }
+                    });
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        let confettiActive = false;
+        const canvas = document.getElementById("confetti");
+        const ctx = canvas.getContext("2d");
+        let particles = [];
+        const confettiColors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899', '#a855f7'];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class ConfettiParticle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * -100 - 20;
+                this.size = Math.random() * 8 + 6;
+                this.height = Math.random() * 5 + 3;
+                this.color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                this.speedX = Math.random() * 4 - 2;
+                this.speedY = Math.random() * 3 + 2;
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = Math.random() * 8 - 4;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.rotation += this.rotationSpeed;
+                this.speedX += Math.sin(this.y / 20.0) * 0.05;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation * Math.PI / 180);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.roundRect(-this.size/2, -this.height/2, this.size, this.height, 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function startConfetti() {
+            confettiActive = true;
+            particles = [];
+            for (let i = 0; i < 100; i++) {
+                particles.push(new ConfettiParticle());
+            }
+            animateConfetti();
+        }
+
+        function stopConfetti() {
+            confettiActive = false;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles = [];
+        }
+
+        function animateConfetti() {
+            if (!confettiActive) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+                
+                if (p.y > canvas.height) {
+                    if (particles.length < 80) {
+                        particles[i] = new ConfettiParticle();
+                    } else {
+                        particles.splice(i, 1);
+                    }
+                }
+            }
+
+            if (particles.length > 0) {
+                requestAnimationFrame(animateConfetti);
+            }
+        }
+    </script>
+</body>
+</html>
