@@ -669,6 +669,15 @@
                 <div class="auth-footer">
                     New player? <span class="auth-link" onclick="showAuthScreen('signup')">Sign Up Here</span>
                 </div>
+
+                <!-- Server Connection Settings -->
+                <div style="text-align: center; margin-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 10px;">
+                    <span class="auth-link" style="font-size: 0.8rem; text-decoration: none;" onclick="toggleServerSettings()">⚙️ Connection Settings</span>
+                    <div id="server-settings-panel" style="display: none; flex-direction: column; gap: 8px; margin-top: 10px; text-align: left;">
+                        <div class="input-label" style="font-size: 0.65rem;">Custom Server URL (e.g. http://10.110.167.136:8080 or Ngrok URL)</div>
+                        <input type="text" id="custom-server-url" class="auth-input" placeholder="http://10.110.167.136:8080" style="padding: 10px; font-size: 0.85rem;" onchange="saveServerUrl()">
+                    </div>
+                </div>
             </div>
 
             <!-- VIEW 2: SIGN UP VIEW -->
@@ -1000,10 +1009,36 @@
             localStorage.setItem('local_custom_games', JSON.stringify(games));
         }
 
+        let backendUrl = localStorage.getItem('custom_backend_url') || "";
+
+        function toggleServerSettings() {
+            const panel = document.getElementById('server-settings-panel');
+            panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+            playBeep(440, 0.05);
+        }
+
+        function saveServerUrl() {
+            let url = document.getElementById('custom-server-url').value.trim();
+            if (url && !url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "http://" + url; // default to http
+            }
+            backendUrl = url;
+            localStorage.setItem('custom_backend_url', url);
+            document.getElementById('custom-server-url').value = url;
+        }
+
         // safeFetch detects connection failure to transition into Offline Mode
         async function safeFetch(url, options = {}) {
             try {
-                const res = await fetch(url, options);
+                let targetUrl = url;
+                if (backendUrl && url.startsWith("/api/")) {
+                    let cleanBackend = backendUrl;
+                    if (cleanBackend.endsWith("/")) {
+                        cleanBackend = cleanBackend.slice(0, -1);
+                    }
+                    targetUrl = cleanBackend + url;
+                }
+                const res = await fetch(targetUrl, options);
                 
                 const contentType = res.headers.get("content-type") || "";
                 // If the response is a 404 or 405 (or other client error) or is returned as HTML (like static host fallback),
@@ -1054,6 +1089,9 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            const serverInput = document.getElementById('custom-server-url');
+            if (serverInput) serverInput.value = backendUrl;
+
             // Register Service Worker for PWA
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('sw.js')
@@ -1378,6 +1416,22 @@
                 return;
             }
 
+            // Check if the code is a self-contained Global Share Code (format: ID_MIN_MAX_ATTEMPTS or ID_MIN_MAX_ATTEMPTS_TARGET)
+            const parts = code.split('_');
+            if (parts.length >= 4) {
+                const gameName = parts[0];
+                const minRangeVal = parseInt(parts[1]);
+                const rangeVal = parseInt(parts[2]);
+                const attemptsVal = parseInt(parts[3]);
+                const targetNumberVal = parts[4] ? parseInt(parts[4]) : 0;
+
+                if (!isNaN(minRangeVal) && !isNaN(rangeVal) && !isNaN(attemptsVal)) {
+                    setupGlobalShareGame(gameName, minRangeVal, rangeVal, attemptsVal, targetNumberVal);
+                    input.value = '';
+                    return;
+                }
+            }
+
             safeFetch(`/api/start?gameId=${encodeURIComponent(code)}`, { method: 'POST' })
                 .then(res => {
                     if (!res.ok) return res.json().then(e => { throw new Error(e.error); });
@@ -1433,6 +1487,43 @@
                         playBeep(220, 0.15, "square");
                     }
                 });
+        }
+
+        function setupGlobalShareGame(name, minRangeVal, rangeVal, attemptsVal, targetVal) {
+            maxAttempts = attemptsVal;
+            attemptsLeft = attemptsVal;
+            isGameActive = true;
+            selectedDifficulty = 'admin'; // Custom mode
+            activeCustomGameId = name;
+
+            document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('custom-game-select').value = ""; // Reset dropdown
+
+            offlineMinRange = minRangeVal;
+            offlineMaxRange = rangeVal;
+            
+            if (targetVal > 0) {
+                offlineSecretTarget = targetVal;
+            } else {
+                offlineSecretTarget = Math.floor(Math.random() * (rangeVal - minRangeVal + 1)) + minRangeVal;
+            }
+
+            document.getElementById('range-text').textContent = `Guess a number between ${minRangeVal} and ${rangeVal}`;
+            const guessInput = document.getElementById('guess-input');
+            guessInput.min = minRangeVal;
+            guessInput.max = rangeVal;
+            guessInput.value = '';
+            guessInput.disabled = false;
+            guessInput.focus();
+
+            document.getElementById('guess-btn').disabled = false;
+            renderAttempts(attemptsLeft, maxAttempts);
+            
+            const targetText = targetVal > 0 ? " (Fixed Target)" : " (Random Target)";
+            updateFeedback(`🎮 Playing Global Game: ${name}${targetText}`, COLORS.success);
+            
+            playBeep(520, 0.15);
+            stopConfetti();
         }
 
         function newGame() {
@@ -1924,7 +2015,7 @@
 
         function loadAdminDashboard() {
             adjustAdminMaxGuess();
-            fetch(`/api/admin/players?adminUser=${encodeURIComponent(currentUsername)}&adminPass=${encodeURIComponent(currentPassword)}`)
+            safeFetch(`/api/admin/players?adminUser=${encodeURIComponent(currentUsername)}&adminPass=${encodeURIComponent(currentPassword)}`)
                 .then(res => {
                     if (!res.ok) throw new Error("Unauthorized");
                     return res.json();
@@ -2022,7 +2113,8 @@
                     return res.json();
                 })
                 .then(data => {
-                    alert(`Custom Game (ID: ${gameId}) saved successfully!`);
+                    const shareCode = `${gameId}_${minRangeVal}_${rangeVal}_${attemptsVal}${targetRaw !== "" ? "_" + targetRaw : ""}`;
+                    alert(`Custom Game (ID: ${gameId}) saved successfully!\n\nShare this code with friends to play globally:\n👉 ${shareCode}`);
                     playBeep(520, 0.15);
                     document.getElementById('admin-game-id').value = '';
                     document.getElementById('admin-target').value = '';
@@ -2046,7 +2138,8 @@
                         });
                         saveLocalCustomGames(games);
                         
-                        alert(`[Offline Mode] Custom Game (ID: ${gameId}) saved successfully!`);
+                        const shareCode = `${gameId}_${minRangeVal}_${rangeVal}_${attemptsVal}${targetRaw !== "" ? "_" + targetRaw : ""}`;
+                        alert(`[Offline Mode] Custom Game (ID: ${gameId}) saved successfully!\n\nShare this code with friends to play globally:\n👉 ${shareCode}`);
                         playBeep(520, 0.15);
                         document.getElementById('admin-game-id').value = '';
                         document.getElementById('admin-target').value = '';
