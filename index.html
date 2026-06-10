@@ -1004,6 +1004,14 @@
         async function safeFetch(url, options = {}) {
             try {
                 const res = await fetch(url, options);
+                
+                // If the response is a 404 or is returned as HTML (like GitHub Pages' 404 HTML page),
+                // we must treat this as a SERVER_OFFLINE error to fall back to local offline mode.
+                const contentType = res.headers.get("content-type") || "";
+                if (res.status === 404 || contentType.includes("text/html")) {
+                    throw new Error("SERVER_OFFLINE");
+                }
+
                 if (isOfflineMode) {
                     isOfflineMode = false;
                     updateNetworkStatusUI();
@@ -1011,7 +1019,7 @@
                 }
                 return res;
             } catch (err) {
-                if (err instanceof TypeError || err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
+                if (err.message === "SERVER_OFFLINE" || err instanceof TypeError || err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
                     if (!isOfflineMode) {
                         isOfflineMode = true;
                         updateNetworkStatusUI();
